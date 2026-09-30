@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ghassen Kahia — Software Engineer</title>
+  <meta name="description" content="Portfolio of Ghassen Kahia, software engineer. Fast, clear software, engineered to last." />
+  <meta name="theme-color" content="#EEEBE3" />
+
+  <meta property="og:title" content="Ghassen Kahia — Software Engineer" />
+  <meta property="og:description" content="Fast, clear software, engineered to last." />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23FF4A1C'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='%2315171C' font-family='Arial' font-weight='900'>GK</text></svg>" />
+
+  <!-- Apply saved theme before paint to avoid a flash -->
+  <script>
+    try {
+      var t = localStorage.getItem("theme");
+      if (!t && matchMedia("(prefers-color-scheme: dark)").matches) t = "blueprint";
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Shared SVG defs (hatching for the isometric drawings) -->
+  <svg class="defs" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="hatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+        <line class="hatch-line" x1="0" y1="0" x2="0" y2="5" />
+      </pattern>
+    </defs>
+  </svg>
+
+  <header class="topbar" id="topbar">
+    <a href="#top" class="brand" aria-label="Back to top">
+      <span class="brand-mark">GK</span>
+      <span class="brand-meta">
+        <b data-name-full>Ghassen Kahia</b>
+        <small data-role></small>
+      </span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="Sections">
+      <a href="#about"><i>01</i>About</a>
+      <a href="#work"><i>02</i>Work</a>
+      <a href="#parts"><i>03</i>Skills</a>
+      <a href="#revisions"><i>04</i>Experience</a>
+      <a href="#contact"><i>05</i>Contact</a>
+    </nav>
+
+    <div class="top-actions">
+      <button class="theme-switch" id="themeToggle" role="switch" aria-checked="false" aria-label="Switch to blueprint theme">
+        <span data-t="paper">Paper</span><span data-t="blueprint">Blueprint</span>
+      </button>
+      <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- 00 — HERO -->
+    <section class="hero" id="top" data-sheet="00" >
+      <div class="hero-grid">
+        <div class="hero-main">
+          <p class="kicker reveal"><span data-role></span> — Portfolio</p>
+
+          <h1 class="name" id="name">
+            <span class="name-line" data-first>Ghassen</span>
+            <span class="name-line outline" data-last>Kahia</span>
+          </h1>
+
+          <p class="tagline reveal" data-tagline></p>
+
+          <div class="cta reveal">
+            <a href="#work" class="btn btn-ink">View my work <span aria-hidden="true">→</span></a>
+            <a href="#" class="btn btn-line" data-resume>Download CV <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+
+        <figure class="hero-figure reveal" id="heroFigure">
+          <svg class="iso" id="heroFig" role="img" aria-label="Exploded isometric drawing of a full-stack application: interface, API and database layers"></svg>
+          <figcaption>Interface · API · Database</figcaption>
+        </figure>
+      </div>
+
+      <dl class="title-block reveal">
+        <div><dt>Role</dt><dd data-role></dd></div>
+        <div><dt>Location</dt><dd data-location></dd></div>
+        <div><dt>Local time</dt><dd id="clock">--:--:--</dd></div>
+        <div><dt>Status</dt><dd><span class="status-dot"></span><span data-status></span></dd></div>
+      </dl>
+    </section>
+
+    <!-- 01 — ABOUT -->
+    <section class="section" id="about" data-sheet="01" >
+      <header class="sheet-head reveal">
+        <span class="sheet-no">01</span>
+        <h2 class="sheet-title">About</h2>
+        
+      </header>
+
+      <div class="about-grid">
+        <p class="statement reveal" data-about></p>
+        <aside class="spec reveal">
+          <h3 class="spec-h">Specifications</h3>
+          <dl id="specList"></dl>
+        </aside>
+      </div>
+    </section>
+
+    <!-- 02 — WORK -->
+    <section class="section" id="work" data-sheet="02" >
+      <header class="sheet-head reveal">
+        <span class="sheet-no">02</span>
+        <h2 class="sheet-title">Selected work</h2>
+        <span class="sheet-meta"><span id="projectCount">00</span> PROJECTS</span>
+      </header>
+
+      <div class="filters reveal" id="filters" role="group" aria-label="Filter projects"></div>
+
+      <div class="index reveal">
+        <div class="index-head" aria-hidden="true">
+          <span>No.</span><span>Title</span><span>Type</span><span class="c-stack">Stack</span><span>Year</span><span></span>
+        </div>
+        <ol class="index-list" id="projectList"></ol>
+      </div>
+    </section>
+
+    <!-- 03 — SKILLS -->
+    <section class="section" id="parts" data-sheet="03" >
+      <header class="sheet-head reveal">
+        <span class="sheet-no">03</span>
+        <h2 class="sheet-title">Skills</h2>
+        <span class="sheet-meta"><span id="partCount">00</span> SKILLS</span>
+      </header>
+      <div class="parts" id="partsGrid"></div>
+    </section>
+
+    <!-- 04 — EXPERIENCE -->
+    <section class="section" id="revisions" data-sheet="04" >
+      <header class="sheet-head reveal">
+        <span class="sheet-no">04</span>
+        <h2 class="sheet-title">Experience</h2>
+        
+      </header>
+      <div class="revs">
+        <div class="rev-head" aria-hidden="true"><span>Rev</span><span>Date</span><span>Description</span><span>Appd</span></div>
+        <ol id="revList"></ol>
+      </div>
+    </section>
+
+    <!-- 05 — CONTACT -->
+    <section class="section contact" id="contact" data-sheet="05" >
+      <header class="sheet-head reveal">
+        <span class="sheet-no">05</span>
+        <h2 class="sheet-title">Contact</h2>
+        
+      </header>
+
+      <div class="contact-grid">
+        <div class="reveal">
+          <p class="contact-title">Let's build<br />something <span class="hand">solid.</span></p>
+          <a class="email-link" data-email-link href="#"><span data-email></span> <span aria-hidden="true">↗</span></a>
+          <div class="contact-actions">
+            <button class="btn btn-line" id="copyEmail"><span class="copy-label">Copy email</span></button>
+            <ul class="socials" id="socials"></ul>
+          </div>
+        </div>
+
+        <div class="stamp reveal" aria-hidden="true">
+          <svg viewBox="0 0 200 200">
+            <defs><path id="stampPath" d="M100,100 m-76,0 a76,76 0 1,1 152,0 a76,76 0 1,1 -152,0" /></defs>
+            <g class="stamp-spin">
+              <circle cx="100" cy="100" r="94" />
+              <circle cx="100" cy="100" r="58" />
+              <text><textPath href="#stampPath">APPROVED FOR HIRE ✦ APPROVED FOR HIRE ✦ </textPath></text>
+            </g>
+            <text class="stamp-center" x="100" y="114" text-anchor="middle">GK</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <dl class="title-block footer-block">
+      <div><dt>Built by</dt><dd data-name-full>Ghassen Kahia</dd></div>
+      
+      
+      <div><dt>Date</dt><dd>© <span id="year"></span></dd></div>
+      <div><dt>Return</dt><dd><a href="#top" class="back-top">Back to top ↑</a></dd></div>
+    </dl>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
