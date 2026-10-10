@@ -5,6 +5,9 @@
     String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const pad = (n, len = 2) => String(n).padStart(len, "0");
 
+  // "Reduce motion" (an OS setting) calms large movement — the helix turns slower
+  // and looping / bouncing effects stop in CSS — but fades, colour and the small
+  // interaction effects stay, so the site never looks frozen.
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ---------- Site info from data.js ---------- */
@@ -66,7 +69,8 @@
      back canvas (behind the photo), z >= 0 on the front canvas.
      Skill names appear on base pairs as they turn to face you.
      ========================================================== */
-  const skillNames = SKILLS.flatMap((g) => g.items);
+  const allSkills = SKILLS.flatMap((g, stage) => g.items.map((s) => ({ ...s, stage, used: s.used || [] })));
+  const skillNames = [...allSkills.filter((s) => s.core), ...allSkills.filter((s) => !s.core)].map((s) => s.name);
   const helix = (() => {
     const wrap = $("#helix");
     const back = $(".helix-back", wrap);
@@ -197,7 +201,7 @@
     let last = 0;
     let start = 0;
     let running = false;
-    const SPEED = 0.32; // radians per second
+    const SPEED = reduceMotion ? 0.14 : 0.32; // radians per second
     const ease = (t) => 1 - (1 - t) ** 3;
     const scrollTwist = () => window.scrollY * 0.004;
 
@@ -211,7 +215,7 @@
       requestAnimationFrame(frame);
     };
     const play = () => {
-      if (running || reduceMotion) return;
+      if (running) return;
       running = true;
       last = 0;
       requestAnimationFrame(frame);
@@ -224,7 +228,7 @@
     redraw();
     new ResizeObserver(() => (resize(), redraw())).observe(wrap);
 
-    if (!reduceMotion) {
+    {
       let inView = false;
       new IntersectionObserver((entries) => {
         inView = entries[0].isIntersecting;
@@ -256,11 +260,11 @@
       const w = 2 + Math.floor(rnd() * 6);
       const b = Math.floor(rnd() * 4);
       const h = 50 + Math.floor(rnd() * 40);
-      bars.push(`<rect class="bc-${b}" x="${x}" y="${110 - h}" width="${w}" height="${h}"/>`);
+      bars.push(`<rect class="bc-${b}" style="--k:${bars.length}" x="${x}" y="${110 - h}" width="${w}" height="${h}"/>`);
       x += w + 2 + Math.floor(rnd() * 4);
     }
     const seq = Array.from({ length: 22 }, () => Math.floor(rnd() * 4))
-      .map((b, i) => `<tspan class="bc-${b}" x="${16 + i * 12.2}">${BASES[b]}</tspan>`)
+      .map((b, i) => `<tspan class="bc-${b}" style="--k:${i}" x="${16 + i * 12.2}">${BASES[b]}</tspan>`)
       .join("");
     return `<svg class="barcode" viewBox="0 0 300 150" aria-hidden="true">${bars.join("")}<line x1="16" x2="284" y1="118" y2="118"/><text y="138">${seq}</text></svg>`;
   }
@@ -330,15 +334,199 @@
     $$(".row", list).forEach((row) => row.classList.toggle("hidden", f !== "All" && row.dataset.category !== f));
   });
 
-  /* ---------- Skills — genome map ---------- */
-  $("#skillCount").textContent = pad(skillNames.length);
-  $("#genome").innerHTML = SKILLS.map(
-    (g, i) => `
-    <li class="chromo reveal" style="--delay:${(i * 0.05).toFixed(2)}s">
-      <div class="chromo-label"><span class="chromo-no">CHR ${pad(i + 1)}</span><h3>${esc(g.group)}</h3></div>
-      <ul class="genes">${g.items.map((s, j) => `<li class="gene bc-${(i + j) % 4}">${esc(s)}</li>`).join("")}</ul>
+  /* ---------- Skills — toolchain ----------
+     Stages laid out along a rail. Selecting a skill shows where it was
+     used (experiences / projects referenced by id) and what it was
+     used alongside, and lights up those related skills. */
+  $("#skillCount").textContent = pad(allSkills.length);
+  $("#stageCount").textContent = pad(SKILLS.length);
+
+  const sources = Object.fromEntries([
+    ...EXPERIENCE.map((x) => [x.id, { kind: "Internship", title: x.role, org: x.company, when: x.period, href: "#experience" }]),
+    ...PROJECTS.map((p) => [p.id, { kind: "Project", title: p.title, org: p.category, when: p.year, href: "#work" }]),
+  ]);
+  /* Skill icons (icons.js). Brand colours show on hover / selection; marks whose
+     brand colour is near-black fall back to the text colour so they stay visible. */
+  const isDark = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    return 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255) < 60;
+  };
+  const icon = (key, cls = "ico") => {
+    const ic = typeof ICONS !== "undefined" && ICONS[key];
+    if (!ic) return "";
+    const brand = ic.hex && !isDark(ic.hex) ? ` style="--brand:${ic.hex}"` : "";
+    return `<svg class="${cls}${ic.line ? " line" : ""}" viewBox="0 0 24 24" aria-hidden="true"${brand}><path d="${ic.d}"/></svg>`;
+  };
+  const stageLabel = (i) => `${pad(i + 1)} · ${SKILLS[i].stage}`;
+  const chipHTML = (s, i, extra = "") =>
+    `<button class="chip${s.core ? " core" : ""}${extra}" data-skill="${i}" aria-pressed="false">${icon(s.icon)}${esc(s.name)}${
+      s.used.length ? `<span class="chip-dot" title="Used in an internship or project"></span>` : ""
+    }</button>`;
+
+  const pipeline = $("#pipeline");
+  const stagesEl = $("#stages");
+  const trace = $("#trace");
+  let d = 0;
+  stagesEl.innerHTML = SKILLS.map(
+    (g, gi) => `
+    <li class="stage ${gi % 2 ? "bc-1" : "bc-0"}" style="--i:${gi}">
+      <div class="stage-head">
+        <span class="stage-node" aria-hidden="true"></span>
+        <span class="stage-no">${esc(stageLabel(gi))}</span>
+        <h3>${esc(g.group)}</h3>
+        <p>${esc(g.blurb || "")}</p>
+      </div>
+      <ul class="chips">${allSkills
+        .map((s, i) => (s.stage === gi ? `<li style="--d:${(0.35 + d++ * 0.025).toFixed(3)}s">${chipHTML(s, i)}</li>` : ""))
+        .join("")}</ul>
     </li>`
   ).join("");
+
+  const related = (s) =>
+    allSkills
+      .map((o, i) => [o, i])
+      .filter(([o]) => o !== s && o.used.some((id) => s.used.includes(id)));
+
+  /* Selecting a skill sends a packet along the rail from its stage to every
+     stage it was used with; each node pings when the packet arrives. */
+  const nodes = $$(".stage-node", stagesEl);
+  const ping = (n) => {
+    n.classList.remove("ping");
+    void n.offsetWidth; // restart the animation
+    n.classList.add("ping");
+  };
+  let routes = [];
+  let routeTimer;
+  function route(from, targets) {
+    if (!pipeline.classList.contains("in")) return;
+    routes.forEach((a) => a.cancel());
+    routes = [];
+    const box = pipeline.getBoundingClientRect();
+    const center = (n) => {
+      const r = n.getBoundingClientRect();
+      return [r.left + r.width / 2 - box.left, r.top + r.height / 2 - box.top];
+    };
+    const [x0, y0] = center(nodes[from]);
+    ping(nodes[from]);
+    targets.forEach((t) => {
+      const [x1, y1] = center(nodes[t]);
+      const packet = document.createElement("span");
+      packet.className = "packet";
+      pipeline.append(packet);
+      const a = packet.animate(
+        [{ transform: `translate(${x0}px, ${y0}px)` }, { transform: `translate(${x1}px, ${y1}px)` }],
+        { duration: 350 + Math.hypot(x1 - x0, y1 - y0) * 0.9, easing: "cubic-bezier(0.5, 0, 0.3, 1)" }
+      );
+      a.onfinish = () => (packet.remove(), ping(nodes[t]));
+      a.oncancel = () => packet.remove();
+      routes.push(a);
+    });
+  }
+
+  const narrow = matchMedia("(max-width: 1100px)");
+  let current = -1;
+  const placeTrace = () => {
+    // On narrow screens the trace sits right under the selected skill's stage
+    if (narrow.matches && current >= 0) $$(".stage", stagesEl)[allSkills[current].stage].append(trace);
+    else pipeline.after(trace);
+  };
+
+  function select(i) {
+    if (i === current) return;
+    current = i;
+    const s = allSkills[i];
+    const rel = related(s);
+    const relSet = new Set(rel.map(([, j]) => j));
+
+    $$(".chip", stagesEl).forEach((c) => {
+      const j = +c.dataset.skill;
+      c.classList.toggle("active", j === i);
+      c.classList.toggle("linked", relSet.has(j));
+      c.setAttribute("aria-pressed", j === i);
+    });
+    const litStages = new Set([s.stage, ...rel.map(([o]) => o.stage)]);
+    $$(".stage", stagesEl).forEach((el, gi) => el.classList.toggle("lit", litStages.has(gi)));
+    pipeline.classList.add("focused");
+
+    const used = s.used.map((id) => sources[id]).filter(Boolean);
+    trace.innerHTML = `
+      <div class="trace-h"><span>Skill trace</span><span>${esc(stageLabel(s.stage))}</span></div>
+      <div class="trace-body bc-${s.stage % 2}">
+        <div class="trace-skill">
+          <h3>${icon(s.icon, "ico ico-lg")}${esc(s.name)}</h3>
+          <p>${esc(SKILLS[s.stage].group)}${s.core ? ` <em>Core focus</em>` : ""}</p>
+        </div>
+        <div class="trace-used">
+          <span class="trace-label">Used in</span>
+          ${
+            used.length
+              ? `<ul>${used
+                  .map((u) => `<li><a href="${u.href}"><i>${esc(u.kind)}</i><b>${esc(u.title)}</b><span>${esc(u.org)} · ${esc(u.when)}</span></a></li>`)
+                  .join("")}</ul>`
+              : `<p class="trace-empty">Learned through my studies — no dedicated internship or project on it yet.</p>`
+          }
+        </div>
+        ${
+          rel.length
+            ? `<div class="trace-pairs"><span class="trace-label">Used alongside</span><div>${rel
+                .map(([o, j]) => chipHTML(o, j, " small"))
+                .join("")}</div></div>`
+            : ""
+        }
+      </div>`;
+    placeTrace();
+    // Wait for the pointer to settle so scanning across chips doesn't spray packets
+    clearTimeout(routeTimer);
+    routeTimer = setTimeout(() => route(s.stage, [...litStages].filter((g) => g !== s.stage)), 140);
+    $(".trace-body", trace).animate(
+        [{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }],
+        { duration: 320, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+      );
+  }
+
+  const pick = (e) => {
+    const chip = e.target.closest(".chip");
+    if (chip) select(+chip.dataset.skill);
+  };
+  stagesEl.addEventListener("click", pick);
+  stagesEl.addEventListener("focusin", pick);
+  trace.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    select(+chip.dataset.skill);
+    // The trace was re-rendered, so keep keyboard focus on the matching skill in the stages
+    $(`.chip[data-skill="${current}"]`, stagesEl).focus();
+  });
+  if (matchMedia("(hover: hover)").matches) stagesEl.addEventListener("mouseover", pick);
+  narrow.addEventListener("change", placeTrace);
+
+  // Start on the first core skill of the "Run" stage (falls back to the first skill)
+  const start = allSkills.findIndex((s) => s.core && SKILLS[s.stage].stage === "Run");
+  select(start >= 0 ? start : 0);
+
+  /* Languages (CEFR scale), methods and soft skills */
+  const CEFR = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const X = SKILL_EXTRAS;
+  $("#skillExtras").innerHTML = `
+    <div class="extra">
+      <h3 class="extra-h">Languages</h3>
+      <ul class="langs">${X.languages
+        .map((l) => {
+          const n = l.level === "Native" ? CEFR.length : CEFR.indexOf(l.level) + 1;
+          return `<li><span class="lang-name">${esc(l.name)}</span>
+            <span class="cefr" role="img" aria-label="${esc(l.level)}">${CEFR.map((c, k) => `<i class="${k < n ? "on" : ""}">${c}</i>`).join("")}</span>
+            <span class="lang-level">${esc(l.level)}</span></li>`;
+        })
+        .join("")}</ul>
+    </div>
+    <div class="extra">
+      <h3 class="extra-h">Ways of working</h3>
+      <div class="tags">${X.methods.map((m) => `<span class="tag">${esc(m)}</span>`).join("")}</div>
+    </div>
+    <div class="extra">
+      <h3 class="extra-h">Soft skills</h3>
+      <div class="tags">${X.soft.map((m) => `<span class="tag">${esc(m)}</span>`).join("")}</div>
+    </div>`;
 
   /* ---------- Experience + education timelines ---------- */
   $("#expList").innerHTML = EXPERIENCE.map(
@@ -366,6 +554,68 @@
       </div>
     </li>`
   ).join("");
+
+  /* ---------- Sequenced headings ----------
+     Titles resolve letter by letter out of random bases (A/T/G/C), like a
+     read coming off a sequencer. Each letter is locked to its final width
+     so nothing shifts, and the plain text is restored once it settles. */
+  const BASE_SET = "ATGC";
+  function sequence(el) {
+    const text = el.textContent;
+    if (!text.trim()) return;
+    el.innerHTML = `<span class="sr-only">${esc(text)}</span><span class="seq" aria-hidden="true">${[...text]
+      .map((c) => (c === " " ? " " : `<span class="sq">${esc(c)}</span>`))
+      .join("")}</span>`;
+    const seq = el.lastElementChild;
+    const cells = $$(".sq", seq);
+    const finals = cells.map((c) => c.textContent);
+    cells.forEach((c) => (c.style.width = `${c.getBoundingClientRect().width}px`));
+
+    let t0 = 0;
+    let lastRoll = -Infinity;
+    const step = (t) => {
+      t0 ||= t;
+      const roll = t - lastRoll > 70;
+      if (roll) lastRoll = t;
+      let done = true;
+      cells.forEach((c, i) => {
+        if (t - t0 >= 180 + i * 65) {
+          if (c.dataset.b) (c.textContent = finals[i]), delete c.dataset.b;
+        } else {
+          done = false;
+          if (roll) c.textContent = c.dataset.b = BASE_SET[(Math.random() * 4) | 0];
+        }
+      });
+      if (done) seq.textContent = text;
+      else requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  {
+    const seqIO = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          seqIO.unobserve(e.target);
+          (document.fonts?.ready || Promise.resolve()).then(() => sequence(e.target));
+        }),
+      { rootMargin: "0px 0px -15% 0px" }
+    );
+    $$(".sheet-title, .hero-figure figcaption b").forEach((el) => seqIO.observe(el));
+  }
+
+  /* ---------- Timeline: nodes light up once you've read past them ---------- */
+  const passIO = new IntersectionObserver(
+    (entries) =>
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("passed");
+        passIO.unobserve(e.target);
+      }),
+    { rootMargin: "0px 0px -45% 0px" }
+  );
+  $$(".event").forEach((el) => passIO.observe(el));
 
   /* ---------- Reveal on scroll ---------- */
   const revealIO = new IntersectionObserver(
@@ -411,7 +661,7 @@
     const dark = root.dataset.theme === "dark";
     themeBtn.setAttribute("aria-checked", dark);
     themeBtn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
-    themeMeta.setAttribute("content", dark ? "#0B0E13" : "#EEEBE3");
+    themeMeta.setAttribute("content", dark ? "#0B0F14" : "#EEEBE3");
     helix.refresh();
   };
   syncTheme();
@@ -433,4 +683,18 @@
     }
     setTimeout(() => (label.textContent = "Copy email"), 2000);
   });
+
+  /* ---------- For whoever opens the console ---------- */
+  const mono = "font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.6;";
+  console.log(
+    `%c$ kubectl describe candidate ${SITE.name.toLowerCase().replace(/\s+/g, "-")}%c\n` +
+      `Name:      ${SITE.name}\n` +
+      `Role:      ${SITE.role}\n` +
+      `Status:    ${SITE.available ? SITE.status : "Currently booked"}\n` +
+      `Stack:     ${allSkills.filter((s) => s.core).map((s) => s.name).join(", ")}\n` +
+      `Contact:   ${SITE.email}\n\n` +
+      `You opened the console, so we'd probably get along. Say hi.`,
+    `${mono} color: #6cdcc4; font-weight: 700;`,
+    `${mono} color: inherit;`
+  );
 })();

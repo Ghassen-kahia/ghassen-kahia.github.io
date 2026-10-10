@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ghassen Kahia — Cloud & DevOps Engineer</title>
   <meta name="description" content="Portfolio of Ghassen Kahia, cloud & DevOps engineering student at ESPRIT / ESEO. Looking for a final-year internship (PFE) from February 2027." />
-  <meta name="theme-color" content="#0B0E13" />
+  <meta name="theme-color" content="#0B0F14" />
 
   <meta property="og:title" content="Ghassen Kahia — Cloud & DevOps Engineer" />
   <meta property="og:description" content="Cloud & DevOps engineering student. Looking for a PFE internship from February 2027." />
@@ -13,7 +13,7 @@
   <meta property="og:url" content="https://ghassen-kahia.github.io/" />
   <meta property="og:image" content="https://ghassen-kahia.github.io/assets/me.jpg" />
 
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23FF5A2A'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='%230B0E13' font-family='Arial' font-weight='900'>GK</text></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23F2805F'/><text x='50' y='66' font-size='46' text-anchor='middle' fill='%230B0F14' font-family='Arial' font-weight='900'>GK</text></svg>" />
 
   <!-- Apply saved theme before paint to avoid a flash -->
   <script>
@@ -132,10 +132,25 @@
     <section class="section" id="skills" data-sheet="03">
       <header class="sheet-head reveal">
         <span class="sheet-no">03</span>
-        <h2 class="sheet-title">Genome map</h2>
-        <span class="sheet-meta"><span id="skillCount">00</span> SKILLS</span>
+        <h2 class="sheet-title">Toolchain</h2>
+        <span class="sheet-meta"><span id="skillCount">00</span> SKILLS · <span id="stageCount">00</span> STAGES</span>
       </header>
-      <ol class="genome" id="genome"></ol>
+
+      <div class="skills-intro reveal">
+        <p>From the sensor to the cluster — every tool I use, in the order data travels through it. <b>Select a skill</b> to trace where I've used it.</p>
+        <ul class="legend" aria-label="Legend">
+          <li><span class="legend-core" aria-hidden="true"></span>Core focus</li>
+          <li><span class="legend-dot" aria-hidden="true"></span>Used in an internship or project</li>
+        </ul>
+      </div>
+
+      <div class="pipeline reveal" id="pipeline">
+        <span class="rail" aria-hidden="true"></span>
+        <ol class="stages" id="stages"></ol>
+      </div>
+      <div class="trace" id="trace" aria-live="polite"></div>
+
+      <div class="extras reveal" id="skillExtras"></div>
     </section>
 
     <!-- 04 — EXPERIENCE -->
@@ -165,7 +180,7 @@
 
       <div class="contact-grid">
         <div class="reveal">
-          <p class="contact-title">Let's build<br />something <span class="hand">solid.</span></p>
+          <p class="contact-title">Let's build<br />something <span class="hand">solid.<svg class="scribble" viewBox="0 0 120 22" aria-hidden="true"><path pathLength="1" d="M3 14 C 28 5, 52 18, 76 10 S 108 7, 117 13" /></svg></span></p>
           <a class="email-link" data-email-link href="#"><span data-email></span> <span aria-hidden="true">↗</span></a>
           <div class="contact-actions">
             <button class="btn btn-line" id="copyEmail"><span class="copy-label">Copy email</span></button>
@@ -178,7 +193,7 @@
             <defs><path id="stampPath" d="M100,100 m-76,0 a76,76 0 1,1 152,0 a76,76 0 1,1 -152,0" /></defs>
             <circle cx="100" cy="100" r="94" />
             <circle cx="100" cy="100" r="58" />
-            <text><textPath href="#stampPath" textLength="472" lengthAdjust="spacing" data-stamp></textPath></text>
+            <g class="stamp-ring"><text><textPath href="#stampPath" textLength="472" lengthAdjust="spacing" data-stamp></textPath></text></g>
             <text class="stamp-center" x="100" y="114" text-anchor="middle">GK</text>
           </svg>
         </div>
@@ -192,8 +207,10 @@
       <div><dt>Date</dt><dd>© <span id="year"></span></dd></div>
       <div><dt>Return</dt><dd><a href="#top" class="back-top">Back to top ↑</a></dd></div>
     </dl>
+    <p class="colophon">Hand-coded from scratch — plain HTML, CSS and JavaScript, no templates or frameworks. The helix is drawn live on a canvas.</p>
   </footer>
 
+  <script src="icons.js"></script>
   <script src="data.js"></script>
   <script src="script.js"></script>
 </body>
