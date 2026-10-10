@@ -10,6 +10,13 @@
   // interaction effects stay, so the site never looks frozen.
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Brand colours this dark would vanish on the dark theme; those use the text colour instead
+  const isDark = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    return 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255) < 60;
+  };
+
+
   /* ---------- Site info from data.js ---------- */
   const [first, ...rest] = SITE.name.split(/\s+/);
   $("[data-first]").textContent = first;
@@ -87,7 +94,8 @@
      Skill names appear on base pairs as they turn to face you.
      ========================================================== */
   const allSkills = SKILLS.flatMap((g, stage) => g.items.map((s) => ({ ...s, stage, used: s.used || [] })));
-  const skillNames = [...allSkills.filter((s) => s.core), ...allSkills.filter((s) => !s.core)].map((s) => s.name);
+  // Core skills first: they're the first labels to appear on the hero helix
+  const helixSkills = [...allSkills.filter((s) => s.core), ...allSkills.filter((s) => !s.core)];
   const helix = (() => {
     const wrap = $("#helix");
     const back = $(".helix-back", wrap);
@@ -115,6 +123,27 @@
         c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
       });
     };
+
+    const paths = {};
+    function drawIcon(key, x, y, size) {
+      const ic = typeof ICONS !== "undefined" && ICONS[key];
+      if (!ic) return;
+      const path = (paths[key] ||= new Path2D(ic.d));
+      const color = ic.line ? colors.b : ic.hex && !isDark(ic.hex) ? ic.hex : colors.ink;
+      cf.save();
+      cf.translate(x, y - size / 2);
+      cf.scale(size / 24, size / 24);
+      if (ic.line) {
+        cf.strokeStyle = color;
+        cf.lineWidth = 2;
+        cf.lineCap = cf.lineJoin = "round";
+        cf.stroke(path);
+      } else {
+        cf.fillStyle = color;
+        cf.fill(path);
+      }
+      cf.restore();
+    }
 
     function draw(phase, grow) {
       cb.clearRect(0, 0, W, H);
@@ -192,22 +221,27 @@
           ctx.fill();
         });
 
-        // Skill label on every other rung, shown while the rung faces the viewer
+        // Skill (logo + name) on every other rung, carried by strand A: as the helix turns
+        // the label swings out on the right, then on the left, in step with the rotation.
         if (i % 2 === 0) {
-          const facing = Math.abs(a.c);
-          const show = Math.max(0, (facing - 0.82) / 0.18);
+          const show = Math.max(0, (Math.abs(a.c) - 0.82) / 0.18);
           if (show > 0) {
-            const end = a.x > b.x ? a : b;
-            const label = skillNames[(i / 2) % skillNames.length];
+            const skill = helixSkills[(i / 2) % helixSkills.length];
+            const dir = a.x >= cx ? 1 : -1; // which side of the helix the label sits on
+            const ICON = 14;
             cf.globalAlpha = show * fade;
             cf.strokeStyle = colors.ink2;
             cf.lineWidth = 1;
             cf.beginPath();
-            cf.moveTo(end.x + 6, end.y);
-            cf.lineTo(end.x + 18, end.y);
+            cf.moveTo(a.x + 6 * dir, a.y);
+            cf.lineTo(a.x + 18 * dir, a.y);
             cf.stroke();
+            const iconX = dir > 0 ? a.x + 22 : a.x - 22 - ICON;
+            drawIcon(skill.icon, iconX, a.y, ICON);
             cf.fillStyle = colors.ink;
-            cf.fillText(label, end.x + 22, end.y);
+            cf.textAlign = dir > 0 ? "left" : "right";
+            cf.fillText(skill.name, dir > 0 ? iconX + ICON + 5 : iconX - 5, a.y);
+            cf.textAlign = "left";
           }
         }
       }
@@ -364,10 +398,6 @@
   ]);
   /* Skill icons (icons.js). Brand colours show on hover / selection; marks whose
      brand colour is near-black fall back to the text colour so they stay visible. */
-  const isDark = (hex) => {
-    const n = parseInt(hex.slice(1), 16);
-    return 0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255) < 60;
-  };
   const icon = (key, cls = "ico") => {
     const ic = typeof ICONS !== "undefined" && ICONS[key];
     if (!ic) return "";
@@ -551,6 +581,20 @@
     </div>`;
 
   /* ---------- Experience + education timelines ---------- */
+  const PIN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`;
+  const GLOBE = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>`;
+  const locHTML = (m) => {
+    if (!m) return "";
+    if (m.remote)
+      return `<div class="loc loc-remote">${GLOBE}<b>Remote</b><span>Worked online with a distributed team</span></div>`;
+    const link = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.query || `${m.lat},${m.lon}`)}`;
+    return `<figure class="loc">
+        ${m.tag ? `<span class="loc-tag">${esc(m.tag)}</span>` : ""}
+        <div class="loc-map" data-lat="${m.lat}" data-lon="${m.lon}" data-zoom="${m.zoom || 13}" role="img" aria-label="Map of ${esc(m.label)}"></div>
+        <figcaption><span>${PIN}${esc(m.label)}</span><a href="${link}" target="_blank" rel="noopener">Open in Maps ↗</a></figcaption>
+      </figure>`;
+  };
+
   $("#expList").innerHTML = EXPERIENCE.map(
     (x) => `
     <li class="event">
@@ -561,6 +605,7 @@
         <span class="event-org">${esc(x.company)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
         <ul class="event-points">${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
       </div>
+      ${locHTML(x.map)}
     </li>`
   ).join("");
 
@@ -574,6 +619,7 @@
         <span class="event-org">${esc(x.school)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
         ${x.note ? `<p class="event-note">${esc(x.note)}</p>` : ""}
       </div>
+      ${locHTML(x.map)}
     </li>`
   ).join("");
 
@@ -626,6 +672,43 @@
     );
     $$(".sheet-title, .hero-figure figcaption b").forEach((el) => seqIO.observe(el));
   }
+
+  /* ---------- Location mini maps (Leaflet + OpenStreetMap France tiles) ----------
+     Created only when scrolled near, so the page doesn't load tiles it never shows.
+     If Leaflet can't load, the caption with "Open in Maps" still works.
+     The dark look comes from a CSS filter on the tiles, so theme changes need no reload. */
+  (() => {
+    if (typeof L === "undefined") {
+      $$(".loc-map").forEach((el) => el.classList.add("no-map"));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          io.unobserve(e.target);
+          const { lat, lon, zoom } = e.target.dataset;
+          const map = L.map(e.target, {
+            zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+            boxZoom: false, keyboard: false, touchZoom: false,
+          }).setView([+lat, +lon], +zoom);
+          map.attributionControl.setPrefix(false);
+          // OSM France tiles: place names in French where available (default OSM shows local scripts)
+          L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
+            subdomains: "abc",
+            maxZoom: 19,
+            attribution:
+              '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · <a href="https://www.openstreetmap.fr/" target="_blank" rel="noopener">OSM France</a>',
+          }).addTo(map);
+          L.marker([+lat, +lon], {
+            icon: L.divIcon({ className: "loc-pin", html: "<i></i>", iconSize: [18, 18] }),
+            interactive: false, keyboard: false,
+          }).addTo(map);
+        }),
+      { rootMargin: "300px 0px" }
+    );
+    $$(".loc-map").forEach((el) => io.observe(el));
+  })();
 
   /* ---------- Map: the route packet only travels for visitors who allow motion ---------- */
   if (reduceMotion) $$(".map-packet").forEach((el) => el.remove());

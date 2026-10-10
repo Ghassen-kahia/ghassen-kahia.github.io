@@ -17,6 +17,7 @@
   --accent-2: #0284c7;
   --on-accent: #ffffff;
   --glow: transparent;
+  --pin: #dc2626; /* location pins on maps */
 
   --f-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -42,6 +43,7 @@
   --accent-2: #38bdf8;
   --on-accent: #0b1220;
   --glow: rgba(56, 189, 248, 0.12);
+  --pin: #f87171;
   color-scheme: dark;
 }
 
@@ -623,7 +625,54 @@ ol, ul { list-style: none; }
 }
 .timeline.in .strand { clip-path: inset(0 0 0 0); }
 
-.event { position: relative; display: grid; grid-template-columns: 44px 170px minmax(0, 1fr); gap: 24px; padding: 6px 0 44px; }
+.event { position: relative; display: grid; grid-template-columns: 44px 170px minmax(0, 1fr) minmax(0, 290px); gap: 24px; padding: 6px 0 44px; }
+
+/* Location card beside each entry */
+.loc {
+  align-self: start; margin-top: 2px;
+  border: 1px solid var(--line-strong); background: var(--paper-2);
+  transition: border-color 0.3s, transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+}
+.event:hover .loc { border-color: var(--accent-2); transform: translateY(-3px); box-shadow: 5px 5px 0 color-mix(in srgb, var(--accent-2) 20%, transparent); }
+.loc-map { height: 150px; background: var(--paper-2); z-index: 0; }
+.loc-map.no-map { display: none; }
+.loc-map .leaflet-tile-pane { transition: filter 0.4s; }
+/* OpenStreetMap tiles are light: invert, flatten to grey, then tint to midnight blue in dark mode */
+[data-theme="dark"] .loc-map .leaflet-tile-pane { filter: invert(1) grayscale(1) brightness(0.7) contrast(1.15) sepia(1) hue-rotate(172deg) saturate(2.2); }
+[data-theme="light"] .loc-map .leaflet-tile-pane { filter: saturate(0.3) contrast(0.95) brightness(1.03); }
+.loc-map .leaflet-control-attribution {
+  padding: 1px 5px; font-family: var(--f-mono); font-size: 8.5px;
+  background: color-mix(in srgb, var(--paper-2) 80%, transparent); color: var(--ink-2);
+}
+.loc-map .leaflet-control-attribution a { color: var(--ink-2); }
+.loc-pin i {
+  position: absolute; inset: 3px; border-radius: 50%;
+  background: var(--pin); box-shadow: 0 0 0 3px var(--paper), 0 0 14px var(--pin);
+}
+.loc-pin i::after {
+  content: ""; position: absolute; inset: -2px; border-radius: 50%;
+  border: 2px solid var(--pin); animation: map-pulse 2.4s ease-out infinite;
+}
+.loc figcaption {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 9px 12px; border-top: 1px solid var(--line);
+  font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.03em;
+}
+.loc figcaption span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); min-width: 0; }
+.loc svg { flex: none; width: 14px; height: 14px; fill: none; stroke: var(--pin); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.loc { position: relative; }
+.loc-tag {
+  position: absolute; top: 8px; left: 8px; z-index: 500;
+  padding: 3px 8px; font-family: var(--f-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--paper-2); border: 1px solid var(--line-strong); color: var(--ink);
+}
+.loc figcaption span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loc figcaption a { color: var(--ink-2); white-space: nowrap; transition: color 0.2s; }
+.loc figcaption a:hover { color: var(--accent-2); }
+.loc-remote { display: grid; justify-items: start; gap: 4px; padding: 18px 16px; }
+.loc-remote svg { width: 26px; height: 26px; margin-bottom: 6px; }
+.loc-remote b { font-weight: 650; }
+.loc-remote span { font-family: var(--f-mono); font-size: 11px; color: var(--ink-2); }
 .node {
   position: relative; z-index: 1; justify-self: center; margin-top: 4px;
   width: 16px; height: 16px; border-radius: 50%;
@@ -759,12 +808,12 @@ ol, ul { list-style: none; }
 .footer-map.in .map-route { stroke-dashoffset: 0; }
 .map-packet { fill: var(--accent); opacity: 0; transition: opacity 0.4s 2.4s; }
 .footer-map.in .map-packet { opacity: 1; }
-.map-pin circle { fill: var(--paper); stroke: var(--accent-2); stroke-width: 1.6; }
+.map-pin circle { fill: var(--paper); stroke: var(--pin); stroke-width: 1.6; }
 .map-pin text { font-family: var(--f-mono); font-size: 10px; font-weight: 500; fill: var(--ink); }
 .map-pin tspan { fill: var(--ink-2); }
-.map-now circle { fill: var(--accent-2); }
-.map-now tspan { fill: var(--accent-2); }
-.map-pulse { fill: none !important; stroke: var(--accent-2); transform-box: fill-box; transform-origin: center; animation: map-pulse 2.4s ease-out infinite; }
+.map-now circle { fill: var(--pin); }
+.map-now tspan { fill: var(--pin); }
+.map-pulse { fill: none !important; stroke: var(--pin); transform-box: fill-box; transform-origin: center; animation: map-pulse 2.4s ease-out infinite; }
 @keyframes map-pulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
 .footer-map figcaption {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px;
@@ -793,6 +842,7 @@ ol, ul { list-style: none; }
    Responsive
    ========================================================== */
 @media (max-width: 1100px) {
+  .event { grid-template-columns: 44px 130px minmax(0, 1fr) minmax(0, 230px); }
   .footer-main { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.6fr) minmax(0, 0.9fr); }
   .footer-map { grid-column: 1 / -1; max-width: 520px; }
   .nav a i { display: none; }
@@ -854,7 +904,8 @@ ol, ul { list-style: none; }
 
   .about-grid, .contact-grid { grid-template-columns: minmax(0, 1fr); }
   .extras { grid-template-columns: minmax(0, 1fr); }
-  .event { grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "node date" "node body"; row-gap: 6px; column-gap: 18px; }
+  .event { grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: "node date" "node body" "node loc"; row-gap: 6px; column-gap: 18px; }
+  .loc { grid-area: loc; max-width: 420px; margin-top: 10px; }
   .node { grid-area: node; }
   .event-date { grid-area: date; padding-top: 2px; }
   .event-body { grid-area: body; }
@@ -897,6 +948,7 @@ ol, ul { list-style: none; }
   .rail::after { display: none; }
   .stamp-ring { animation: none; }
   .map-pulse { animation: none; opacity: 0; }
+  .loc-pin i::after { animation: none; }
   .stamp.reveal { transform: none; }
   .event.passed .node { animation: none; }
   .row-head:hover .c-title { transform: none; }

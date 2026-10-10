@@ -177,14 +177,17 @@ const SKILL_EXTRAS = {
   soft: ["Analytical thinking", "Autonomy", "Effective collaboration", "Clear communication"],
 };
 
-/* Experience — newest first */
+/* Experience — newest first.
+   map: neighbourhood shown on the mini map (lat / lon / zoom); optional tag (e.g. "Remote"),
+   or { remote: true } for a card without a map */
 const EXPERIENCE = [
   {
     id: "rif",
     period: "Jul 2026 — Sep 2026",
     role: "DevOps Intern",
     company: "RIF — Rassemblement des Ingénieurs Francophones",
-    place: "Remote",
+    place: "Paris, France · Remote",
+    map: { lat: 48.8566, lon: 2.3522, zoom: 12, label: "Paris, France", tag: "Remote", query: "Paris, France" },
     points: [
       "Set up a VPN and a proxy to secure and control network traffic.",
       "Automated provisioning and configuration with Terraform and Ansible.",
@@ -197,6 +200,7 @@ const EXPERIENCE = [
     role: "Cybersecurity Engineering Intern",
     company: "ACT — Advanced Computer Technologies",
     place: "Charguia, Tunisia",
+    map: { lat: 36.8385, lon: 10.2045, zoom: 13, label: "Charguia, Tunis", query: "Charguia, Tunis, Tunisia" },
     points: [
       "Deployed and configured a FortiWeb WAF to protect web applications.",
       "Wrote security rules against application attacks following OWASP best practices.",
@@ -209,6 +213,7 @@ const EXPERIENCE = [
     role: "Software Development Intern",
     company: "Esprit Entreprise",
     place: "Ariana, Tunisia",
+    map: { lat: 36.8992, lon: 10.1897, zoom: 13, label: "Esprit, Ariana", query: "ESPRIT, Ariana, Tunisia" },
     points: [
       "Developed the offers module of an international mobility platform.",
       "Designed the interface and integrated features, working in a collaborative team.",
@@ -220,6 +225,7 @@ const EXPERIENCE = [
     role: "Final-Year Intern (Bachelor)",
     company: "Horizon-Data",
     place: "Manzah 1, Tunisia",
+    map: { lat: 36.8405, lon: 10.1690, zoom: 13, label: "El Menzah 1, Tunis", query: "El Menzah 1, Tunis, Tunisia" },
     points: [
       "Designed and built an IoT system to monitor a water pump.",
       "Implemented a machine-learning anomaly-detection algorithm.",
@@ -235,6 +241,7 @@ const EDUCATION = [
     title: "Exchange semester — Smart City track",
     school: "ESEO",
     place: "Dijon, France",
+    map: { lat: 47.3220, lon: 5.0415, zoom: 12, label: "Dijon, France", query: "ESEO Dijon, France" },
     note: "Academic exchange programme between ESPRIT and ESEO.",
   },
   {
@@ -242,6 +249,7 @@ const EDUCATION = [
     title: "Engineering degree in Computer Science — Cloud Computing",
     school: "ESPRIT",
     place: "Ariana, Tunisia",
+    map: { lat: 36.8992, lon: 10.1897, zoom: 13, label: "Esprit, Ariana", query: "ESPRIT, Ariana, Tunisia" },
     note: "",
   },
   {
@@ -249,6 +257,7 @@ const EDUCATION = [
     title: "Bachelor in Computer Systems Engineering — Embedded Systems & IoT",
     school: "ISSAT Mateur",
     place: "Bizerte, Tunisia",
+    map: { lat: 37.0400, lon: 9.6650, zoom: 13, label: "Mateur, Bizerte", query: "ISSAT Mateur, Tunisia" },
     note: "Ranked 1st in the institute with an average of 17.10/20 (2023–2024).",
   },
 ];
