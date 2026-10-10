@@ -6,7 +6,6 @@
   const pad = (n, len = 2) => String(n).padStart(len, "0");
 
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const initials = SITE.name.split(/\s+/).map((w) => w[0]).join("").toUpperCase();
 
   /* ---------- Site info from data.js ---------- */
   const [first, ...rest] = SITE.name.split(/\s+/);
@@ -17,13 +16,14 @@
 
   $$("[data-name-full]").forEach((el) => (el.textContent = SITE.name));
   $$("[data-role]").forEach((el) => (el.textContent = SITE.role));
-  $$("[data-role-lower]").forEach((el) => (el.textContent = SITE.role.toLowerCase()));
   $$("[data-location]").forEach((el) => (el.textContent = SITE.location));
   $$("[data-tagline]").forEach((el) => (el.textContent = SITE.tagline));
   $$("[data-email]").forEach((el) => (el.textContent = SITE.email));
   $$("[data-email-link]").forEach((el) => (el.href = `mailto:${SITE.email}`));
   $$("[data-resume]").forEach((el) => (el.href = SITE.resume));
-  $$("[data-status]").forEach((el) => (el.textContent = SITE.available ? "Available for work" : "Currently booked"));
+  $$("[data-photo]").forEach((el) => SITE.photo && (el.src = SITE.photo));
+  $$("[data-stamp]").forEach((el) => (el.textContent = SITE.stamp));
+  $$("[data-status]").forEach((el) => (el.textContent = SITE.available ? SITE.status : "Currently booked"));
   if (!SITE.available) $(".status-dot").classList.add("off");
 
   $("[data-about]").innerHTML = esc(SITE.about).replace(/\*(.+?)\*/g, "<mark>$1</mark>");
@@ -60,131 +60,185 @@
   setInterval(tickClock, 1000);
 
   /* ==========================================================
-     Isometric drawing engine
-     A scene is a list of boxes {x, y, z, w, d, h, layer, acc}
-     in grid units, plus optional dashed guides and labels.
+     DNA helix (hero)
+     Two strands spiral down the figure and open into a "bubble"
+     around the portrait. Segments with z < 0 are drawn on the
+     back canvas (behind the photo), z >= 0 on the front canvas.
+     Skill names appear on base pairs as they turn to face you.
      ========================================================== */
-  const U = 22;
-  const COS30 = Math.cos(Math.PI / 6);
-  const project = (x, y, z) => [(x - y) * COS30 * U, (x + y) * 0.5 * U - z * U];
-  const fmt = ([a, b]) => `${a.toFixed(1)},${b.toFixed(1)}`;
+  const skillNames = SKILLS.flatMap((g) => g.items);
+  const helix = (() => {
+    const wrap = $("#helix");
+    const back = $(".helix-back", wrap);
+    const front = $(".helix-front", wrap);
+    const cb = back.getContext("2d");
+    const cf = front.getContext("2d");
+    const TURNS = 2.4;
+    const RUNGS = 28;
+    let W = 0, H = 0, colors = {};
 
-  function geometry(scene) {
-    const allPts = [];
-    const track = (p) => (allPts.push(p), p);
+    const readColors = () => {
+      const cs = getComputedStyle(document.documentElement);
+      const v = (name) => cs.getPropertyValue(name).trim();
+      colors = { a: v("--accent"), b: v("--accent-2"), ink: v("--ink"), ink2: v("--ink-2"), mono: v("--f-mono") };
+    };
 
-    const boxes = [...scene.boxes]
-      .map((b, i) => ({ ...b, i, key: (b.layer || 0) * 1000 + (b.x + b.w / 2) + (b.y + b.d / 2) + (b.z + b.h / 2) * 0.01 }))
-      .sort((a, b) => a.key - b.key || a.i - b.i)
-      .map(({ x, y, z, w, d, h, acc }) => {
-        const poly = (pts) => pts.map((p) => fmt(track(project(...p)))).join(" ");
-        return {
-          acc,
-          left: poly([[x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]]),
-          right: poly([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]]),
-          top: poly([[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]]),
-        };
+    const resize = () => {
+      const r = wrap.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = r.width;
+      H = r.height;
+      [back, front].forEach((c) => {
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+        c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+      });
+    };
+
+    function draw(phase, grow) {
+      cb.clearRect(0, 0, W, H);
+      cf.clearRect(0, 0, W, H);
+      if (!W || !H) return;
+
+      const cx = W / 2;
+      const cy = H / 2;
+      const R0 = W * 0.16; // closed helix radius
+      const R1 = W * 0.4; // radius where it opens around the portrait
+      const sig = H * 0.15;
+      const photoR = W * 0.27;
+      const k = (TURNS * 2 * Math.PI) / H;
+      const open = (y) => Math.exp(-((y - cy) ** 2) / (2 * sig * sig));
+      const point = (y, off) => {
+        const r = R0 + (R1 - R0) * open(y);
+        const t = y * k + phase + off;
+        const z = Math.sin(t);
+        return { x: cx + r * Math.cos(t), y: y + z * r * 0.14, z, c: Math.cos(t) };
+      };
+      const visible = (y) => Math.abs(y - cy) <= (grow * H) / 2;
+      const edge = (y) => Math.max(0, Math.min(1, y / (H * 0.12), (H - y) / (H * 0.12)));
+      const overPhoto = (p) => (p.x - cx) ** 2 + (p.y - cy) ** 2 < photoR ** 2;
+      const depth = (z) => (z + 1) / 2;
+
+      // Strands
+      cb.lineCap = cf.lineCap = "round";
+      const STEP = 3;
+      [[0, colors.a], [Math.PI, colors.b]].forEach(([off, col]) => {
+        let prev = point(0, off);
+        for (let y = STEP; y <= H; y += STEP) {
+          const p = point(y, off);
+          if (visible(y)) {
+            const zm = (p.z + prev.z) / 2;
+            const ctx = zm >= 0 ? cf : cb;
+            let alpha = (0.25 + 0.75 * depth(zm)) * edge(y);
+            if (zm >= 0 && overPhoto(p)) alpha *= 0.55;
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 1 + 2 * depth(zm);
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          }
+          prev = p;
+        }
       });
 
-    const guides = (scene.guides || []).map(([p1, p2]) => [...track(project(...p1)), ...track(project(...p2))]);
+      // Base pairs (skipped where the helix opens up)
+      cf.font = cb.font = `500 10px ${colors.mono || "monospace"}`;
+      cf.textBaseline = "middle";
+      for (let i = 0; i < RUNGS; i++) {
+        const y = (H * (i + 0.5)) / RUNGS;
+        if (!visible(y) || open(y) > 0.3) continue;
+        const a = point(y, 0);
+        const b = point(y, Math.PI);
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        const fade = edge(y);
 
-    const maxX = Math.max(...allPts.map((p) => p[0]));
-    const leaderX = maxX + 26;
-    const labels = (scene.labels || []).map(({ at, text }) => {
-      const [ax, ay] = project(...at);
-      allPts.push([leaderX + 10 + text.length * 7.6, ay - 8], [leaderX, ay + 8]);
-      return { ax, ay, lx: leaderX, text };
-    });
+        [[a, colors.a], [b, colors.b]].forEach(([p, col]) => {
+          const ctx = p.z >= 0 ? cf : cb;
+          ctx.globalAlpha = (0.2 + 0.5 * depth(p.z)) * fade;
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(mid.x, mid.y);
+          ctx.stroke();
 
-    const xs = allPts.map((p) => p[0]);
-    const ys = allPts.map((p) => p[1]);
-    const P = 10;
-    const bounds = [Math.min(...xs) - P, Math.min(...ys) - P, Math.max(...xs) - Math.min(...xs) + 2 * P, Math.max(...ys) - Math.min(...ys) + 2 * P];
-    return { boxes, guides, labels, bounds };
-  }
+          ctx.globalAlpha = (0.4 + 0.6 * depth(p.z)) * fade;
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 1.6 + 1.8 * depth(p.z), 0, Math.PI * 2);
+          ctx.fill();
+        });
 
-  function isoMarkup(g) {
-    const guides = g.guides.map(([x1, y1, x2, y2]) => `<line class="guide" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`).join("");
-    const boxes = g.boxes
-      .map(
-        (b, i) => `<g class="box${b.acc ? " acc" : ""}" style="--d:${(i * 0.07).toFixed(2)}s">
-          <polygon class="face f-left" pathLength="1" points="${b.left}"/>
-          <polygon class="face f-right" pathLength="1" points="${b.right}"/>
-          <polygon class="face f-top" pathLength="1" points="${b.top}"/>
-        </g>`
-      )
-      .join("");
-    const labels = g.labels
-      .map(
-        (l) => `<g class="label">
-          <polyline class="leader" points="${l.ax},${l.ay} ${l.lx},${l.ay}"/>
-          <circle class="dotm" r="2.6" cx="${l.ax}" cy="${l.ay}"/>
-          <text x="${l.lx + 8}" y="${l.ay + 4}">${esc(l.text)}</text>
-        </g>`
-      )
-      .join("");
-    return `<g class="guides">${guides}</g><g class="boxes">${boxes}</g><g class="labels">${labels}</g>`;
-  }
+        // Skill label on every other rung, shown while the rung faces the viewer
+        if (i % 2 === 0) {
+          const facing = Math.abs(a.c);
+          const show = Math.max(0, (facing - 0.82) / 0.18);
+          if (show > 0) {
+            const end = a.x > b.x ? a : b;
+            const label = skillNames[(i / 2) % skillNames.length];
+            cf.globalAlpha = show * fade;
+            cf.strokeStyle = colors.ink2;
+            cf.lineWidth = 1;
+            cf.beginPath();
+            cf.moveTo(end.x + 6, end.y);
+            cf.lineTo(end.x + 18, end.y);
+            cf.stroke();
+            cf.fillStyle = colors.ink;
+            cf.fillText(label, end.x + 22, end.y);
+          }
+        }
+      }
+      cb.globalAlpha = cf.globalAlpha = 1;
+    }
 
-  /* ---------- Hero figure: full-stack assembly ---------- */
-  const W = 5;
-  const SLAB = 0.55;
-  function heroScene(gap) {
-    const z = (i) => i * (SLAB + gap);
-    const top = (i) => z(i) + SLAB;
-    const boxes = [
-      // layer 0 — database
-      { x: 0, y: 0, z: z(0), w: W, d: W, h: SLAB, layer: 0 },
-      { x: 0.6, y: 0.6, z: top(0), w: 1.1, d: 1.1, h: 0.7, layer: 1 },
-      { x: 2.0, y: 0.6, z: top(0), w: 1.1, d: 1.1, h: 0.5, layer: 1 },
-      { x: 3.4, y: 0.6, z: top(0), w: 1.1, d: 1.1, h: 0.9, layer: 1 },
-      { x: 0.6, y: 2.4, z: top(0), w: 3.9, d: 2.0, h: 0.35, layer: 1 },
-      // layer 1 — API
-      { x: 0, y: 0, z: z(1), w: W, d: W, h: SLAB, layer: 2 },
-      { x: 0.7, y: 0.7, z: top(1), w: 3.6, d: 0.9, h: 0.4, layer: 3 },
-      { x: 0.7, y: 2.3, z: top(1), w: 1.6, d: 2.0, h: 0.65, layer: 3 },
-      { x: 2.7, y: 2.3, z: top(1), w: 1.6, d: 2.0, h: 0.45, layer: 3 },
-      // layer 2 — interface
-      { x: 0, y: 0, z: z(2), w: W, d: W, h: SLAB, layer: 4, acc: true },
-      { x: 0.5, y: 0.5, z: top(2), w: 4.0, d: 0.7, h: 0.25, layer: 5 },
-      { x: 0.5, y: 1.6, z: top(2), w: 1.8, d: 2.9, h: 0.45, layer: 5 },
-      { x: 2.7, y: 1.6, z: top(2), w: 1.8, d: 1.3, h: 0.7, layer: 5 },
-      { x: 2.7, y: 3.3, z: top(2), w: 1.8, d: 1.2, h: 0.3, layer: 5 },
-    ];
-    const guides = [];
-    [0, 1].forEach((i) =>
-      [[W, 0], [0, W], [W, W]].forEach(([gx, gy]) => guides.push([[gx, gy, top(i)], [gx, gy, z(i + 1)]]))
-    );
-    const labels = [
-      { at: [W, 0, z(2) + SLAB / 2], text: "01 INTERFACE" },
-      { at: [W, 0, z(1) + SLAB / 2], text: "02 API" },
-      { at: [W, 0, z(0) + SLAB / 2], text: "03 DATABASE" },
-    ];
-    return { boxes, guides, labels };
-  }
+    let phase = 0;
+    let last = 0;
+    let start = 0;
+    let running = false;
+    const SPEED = 0.32; // radians per second
+    const ease = (t) => 1 - (1 - t) ** 3;
+    const scrollTwist = () => window.scrollY * 0.004;
 
-  const heroSvg = $("#heroFig");
-  const heroGeo = geometry(heroScene(2.2));
-  heroSvg.setAttribute("viewBox", heroGeo.bounds.join(" "));
-  heroSvg.innerHTML = isoMarkup(heroGeo);
+    const frame = (t) => {
+      if (!running) return;
+      if (!start) start = t;
+      const dt = last ? Math.min(t - last, 50) / 1000 : 0;
+      last = t;
+      phase += dt * SPEED;
+      draw(phase + scrollTwist(), ease(Math.min(1, (t - start) / 1800)));
+      requestAnimationFrame(frame);
+    };
+    const play = () => {
+      if (running || reduceMotion) return;
+      running = true;
+      last = 0;
+      requestAnimationFrame(frame);
+    };
+    const stop = () => (running = false);
+    const redraw = () => draw(phase + scrollTwist(), 1);
 
-  // Draw the figure line by line the first time it comes into view
-  if (!reduceMotion) {
-    heroSvg.classList.add("pre");
-    const drawIO = new IntersectionObserver((entries) => {
-      if (!entries[0].isIntersecting) return;
-      drawIO.disconnect();
-      requestAnimationFrame(() => {
-        heroSvg.classList.remove("pre");
-        heroSvg.classList.add("drawing");
-        setTimeout(() => heroSvg.classList.remove("drawing"), 3200);
-      });
-    }, { threshold: 0.3 });
-    drawIO.observe(heroSvg);
-  }
+    readColors();
+    resize();
+    redraw();
+    new ResizeObserver(() => (resize(), redraw())).observe(wrap);
 
+    if (!reduceMotion) {
+      let inView = false;
+      new IntersectionObserver((entries) => {
+        inView = entries[0].isIntersecting;
+        inView && !document.hidden ? play() : stop();
+      }).observe(wrap);
+      document.addEventListener("visibilitychange", () => (inView && !document.hidden ? play() : stop()));
+    }
+    // Fonts load after first paint; redraw so labels use the mono font
+    document.fonts?.ready.then(() => (readColors(), redraw()));
 
-  /* ---------- Generated project models (unique per title) ---------- */
+    return { refresh: () => (readColors(), redraw()) };
+  })();
+
+  /* ---------- DNA barcode (unique per project title) ---------- */
   function seeded(str) {
     let h = 2166136261;
     for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
@@ -194,51 +248,33 @@
     };
   }
 
-  function projectScene(title) {
+  const BASES = ["A", "T", "G", "C"];
+  function barcode(title) {
     const rnd = seeded(title);
-    const N = 5;
-    const BASE = 0.3;
-    const boxes = [{ x: 0, y: 0, z: 0, w: N, d: N, h: BASE, layer: 0 }];
-    const used = new Set();
-    const target = 3 + Math.floor(rnd() * 3);
-    for (let tries = 0; tries < 60 && boxes.length - 1 < target; tries++) {
-      const w = 1 + Math.floor(rnd() * 2);
-      const d = 1 + Math.floor(rnd() * 2);
-      const x = Math.floor(rnd() * (N - w + 1));
-      const y = Math.floor(rnd() * (N - d + 1));
-      const cells = [];
-      for (let i = x; i < x + w; i++) for (let j = y; j < y + d; j++) cells.push(`${i},${j}`);
-      if (cells.some((c) => used.has(c))) continue;
-      cells.forEach((c) => used.add(c));
-      const h = Math.round((0.5 + rnd() * 2.6) * 10) / 10;
-      boxes.push({ x: x + 0.12, y: y + 0.12, z: BASE, w: w - 0.24, d: d - 0.24, h, layer: 1 });
+    const bars = [];
+    for (let x = 16; x < 284; ) {
+      const w = 2 + Math.floor(rnd() * 6);
+      const b = Math.floor(rnd() * 4);
+      const h = 50 + Math.floor(rnd() * 40);
+      bars.push(`<rect class="bc-${b}" x="${x}" y="${110 - h}" width="${w}" height="${h}"/>`);
+      x += w + 2 + Math.floor(rnd() * 4);
     }
-    boxes[1 + Math.floor(rnd() * (boxes.length - 1))].acc = true;
-    // Sometimes stack a smaller block on top of one of them
-    if (rnd() < 0.6) {
-      const b = boxes[1 + Math.floor(rnd() * (boxes.length - 1))];
-      boxes.push({ x: b.x + 0.2, y: b.y + 0.2, z: b.z + b.h, w: b.w - 0.4, d: b.d - 0.4, h: 0.3 + rnd() * 0.8, layer: 1 });
-    }
-    return { boxes };
+    const seq = Array.from({ length: 22 }, () => Math.floor(rnd() * 4))
+      .map((b, i) => `<tspan class="bc-${b}" x="${16 + i * 12.2}">${BASES[b]}</tspan>`)
+      .join("");
+    return `<svg class="barcode" viewBox="0 0 300 150" aria-hidden="true">${bars.join("")}<line x1="16" x2="284" y1="118" y2="118"/><text y="138">${seq}</text></svg>`;
   }
 
-  const figCache = new Map();
-  const projectFigure = (p) => {
-    if (p.image) return `<img src="${esc(p.image)}" alt="${esc(p.title)} preview" loading="lazy" />`;
-    if (!figCache.has(p.title)) {
-      const g = geometry(projectScene(p.title));
-      figCache.set(p.title, `<svg class="iso" viewBox="${g.bounds.join(" ")}" aria-hidden="true">${isoMarkup(g)}</svg>`);
-    }
-    return figCache.get(p.title);
-  };
+  const projectFigure = (p) =>
+    p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)} preview" loading="lazy" />` : barcode(p.title);
 
-  /* ---------- Drawing index (projects) ---------- */
+  /* ---------- Projects index ---------- */
   const list = $("#projectList");
   $("#projectCount").textContent = pad(PROJECTS.length);
 
   list.innerHTML = PROJECTS.map(
     (p, i) => `
-    <li class="row reveal" data-category="${esc(p.category)}" data-index="${i}" style="--delay:${(i * 0.05).toFixed(2)}s">
+    <li class="row reveal" data-category="${esc(p.category)}" style="--delay:${(i * 0.05).toFixed(2)}s">
       <button class="row-head" aria-expanded="false" aria-controls="row-body-${i}">
         <span class="c-no">${pad(i + 1)}</span>
         <span class="c-title">${esc(p.title)}${p.featured ? `<em class="star" title="Featured">★</em>` : ""}</span>
@@ -294,34 +330,42 @@
     $$(".row", list).forEach((row) => row.classList.toggle("hidden", f !== "All" && row.dataset.category !== f));
   });
 
-  /* ---------- Skills ---------- */
-  $("#partCount").textContent = pad(SKILLS.length);
-  $("#partsGrid").innerHTML = SKILLS.map(
-    (s, i) => `
-    <div class="part reveal" style="--delay:${((i % 4) * 0.06).toFixed(2)}s">
-      <div class="part-top"><span class="part-no">${pad(i + 1)}</span><span>${esc(s.group)}</span></div>
-      <div class="part-name">${esc(s.name)}</div>
-      <div class="part-level" role="img" aria-label="Proficiency ${s.level} of 5">
-        ${[1, 2, 3, 4, 5].map((n) => `<i class="${n <= s.level ? "on" : ""}"></i>`).join("")}
-      </div>
-    </div>`
+  /* ---------- Skills — genome map ---------- */
+  $("#skillCount").textContent = pad(skillNames.length);
+  $("#genome").innerHTML = SKILLS.map(
+    (g, i) => `
+    <li class="chromo reveal" style="--delay:${(i * 0.05).toFixed(2)}s">
+      <div class="chromo-label"><span class="chromo-no">CHR ${pad(i + 1)}</span><h3>${esc(g.group)}</h3></div>
+      <ul class="genes">${g.items.map((s, j) => `<li class="gene bc-${(i + j) % 4}">${esc(s)}</li>`).join("")}</ul>
+    </li>`
   ).join("");
 
-  /* ---------- Experience ---------- */
-  $("#revList").innerHTML = EXPERIENCE.map((x, i) => {
-    const letter = String.fromCharCode(65 + EXPERIENCE.length - 1 - i);
-    return `
-    <li class="rev reveal" style="--delay:${(i * 0.08).toFixed(2)}s">
-      <span class="rev-tri" aria-label="Revision ${letter}">${letter}</span>
-      <span class="rev-date">${esc(x.period)}</span>
-      <div class="rev-body">
-        <h3 class="rev-role">${esc(x.role)}</h3>
-        <span class="rev-company">${esc(x.company)}</span>
-        <p class="rev-desc">${esc(x.description)}</p>
+  /* ---------- Experience + education timelines ---------- */
+  $("#expList").innerHTML = EXPERIENCE.map(
+    (x) => `
+    <li class="event">
+      <span class="node" aria-hidden="true"></span>
+      <span class="event-date">${esc(x.period)}</span>
+      <div class="event-body">
+        <h3 class="event-title">${esc(x.role)}</h3>
+        <span class="event-org">${esc(x.company)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
+        <ul class="event-points">${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
       </div>
-      <span class="rev-appd" aria-hidden="true">${esc(initials)}</span>
-    </li>`;
-  }).join("");
+    </li>`
+  ).join("");
+
+  $("#eduList").innerHTML = EDUCATION.map(
+    (x) => `
+    <li class="event">
+      <span class="node" aria-hidden="true"></span>
+      <span class="event-date">${esc(x.period)}</span>
+      <div class="event-body">
+        <h3 class="event-title">${esc(x.title)}</h3>
+        <span class="event-org">${esc(x.school)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
+        ${x.note ? `<p class="event-note">${esc(x.note)}</p>` : ""}
+      </div>
+    </li>`
+  ).join("");
 
   /* ---------- Reveal on scroll ---------- */
   const revealIO = new IntersectionObserver(
@@ -359,19 +403,20 @@
   menuBtn.addEventListener("click", () => setMenu(!nav.classList.contains("open")));
   navLinks.forEach((l) => l.addEventListener("click", () => setMenu(false)));
 
-  /* ---------- Theme: paper / blueprint ---------- */
+  /* ---------- Theme: light / dark ---------- */
   const root = document.documentElement;
   const themeBtn = $("#themeToggle");
   const themeMeta = $('meta[name="theme-color"]');
   const syncTheme = () => {
-    const bp = root.dataset.theme === "blueprint";
-    themeBtn.setAttribute("aria-checked", bp);
-    themeBtn.setAttribute("aria-label", bp ? "Switch to paper theme" : "Switch to blueprint theme");
-    themeMeta.setAttribute("content", bp ? "#0D2B5E" : "#EEEBE3");
+    const dark = root.dataset.theme === "dark";
+    themeBtn.setAttribute("aria-checked", dark);
+    themeBtn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+    themeMeta.setAttribute("content", dark ? "#0B0E13" : "#EEEBE3");
+    helix.refresh();
   };
   syncTheme();
   themeBtn.addEventListener("click", () => {
-    root.dataset.theme = root.dataset.theme === "blueprint" ? "paper" : "blueprint";
+    root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
     try { localStorage.setItem("theme", root.dataset.theme); } catch {}
     syncTheme();
   });

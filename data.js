@@ -6,148 +6,162 @@
 
 const SITE = {
   name: "Ghassen Kahia",
-  role: "Software Engineer",
+  role: "Cloud & DevOps Engineer",
   tagline:
-    "I design and build software that feels considered — fast, clear, and engineered to last.",
+    "Engineering student building automated, secure infrastructure — from Terraform to Kubernetes. Looking for a final-year internship (PFE) from February 2027.",
   email: "kahiaghassen4@gmail.com",
-  location: "Tunisia",
-  timezone: "Africa/Tunis", // used for the live clock in the hero
-  available: true, // false shows "Currently booked"
-  resume: "#", // link to your CV PDF, e.g. "assets/cv.pdf"
+  location: "Dijon, France",
+  timezone: "Europe/Paris", // used for the live clock in the hero
+  available: true,
+  status: "Open to PFE · Feb 2027", // shown when available is true
+  resume: "assets/Ghassen_Kahia_CV.pdf",
+  photo: "assets/me.jpg",
   socials: {
-    GitHub: "https://github.com/",
-    LinkedIn: "https://www.linkedin.com/",
-    X: "https://x.com/",
+    GitHub: "https://github.com/Ghassen-kahia",
+    LinkedIn: "", // paste your LinkedIn profile URL here
   },
 
   // Wrap words in *asterisks* to highlight them.
   about:
-    "I'm a software engineer who treats every product like a *well-made machine*: every part has a purpose, every interface is *measured twice*, and the whole thing should feel effortless to use. I work across the stack — from *database schemas* to the last pixel.",
+    "I'm a cloud computing engineering student at ESPRIT, currently on exchange at ESEO France. I like infrastructure that runs itself — *automated*, *secure* and *reproducible*. My path goes from embedded systems and IoT, through web development, to cloud and DevOps, so I understand systems *from the sensor to the cluster*.",
 
   specs: [
-    ["Discipline", "Full-stack engineering"],
-    ["Based in", "Tunisia · GMT+1"],
-    ["Focus", "Web apps, APIs, UI craft"],
-    ["Languages", "Arabic · French · English"],
-    ["Currently", "Open to new roles"],
+    ["Discipline", "Cloud & DevOps"],
+    ["School", "ESPRIT · exchange at ESEO"],
+    ["Based in", "Dijon, France"],
+    ["Languages", "Arabic (native) · French B2 · English B2"],
+    ["Distinction", "Ranked 1st in class · 17.10/20"],
+    ["Looking for", "PFE internship · Feb 2027"],
   ],
+
+  stamp: "OPEN FOR PFE ✦ FEB 2027 ✦ ",
 };
 
 /*
-  Projects — shown in the "Drawing index".
-  - category: used by the filter buttons (add any you want)
-  - image: optional path, e.g. "assets/projects/my-app.png".
-           Without one, a unique 3D model is generated from the title.
+  Projects — shown in the "Selected work" index.
+  - category: used by the filter buttons
+  - image: optional screenshot, e.g. "assets/projects/skillhub.png".
+           Without one, a unique DNA barcode is generated from the title.
+  - live / code: links (leave "" to hide the button)
   - featured: true adds a ★ marker
 */
 const PROJECTS = [
   {
-    title: "Nebula Dashboard",
+    title: "SkillHub Cloud Platform",
     description:
-      "Real-time analytics dashboard with live charts, role-based access and a fully customizable widget layout.",
-    tags: ["React", "TypeScript", "WebSockets", "Tailwind"],
-    category: "Web",
+      "IaaS infrastructure on OpenStack (VMs, networking, services) to host the SkillHub application, which I containerized and deployed on Kubernetes for orchestration, scalability and automated rollouts.",
+    tags: ["OpenStack", "Docker", "Kubernetes"],
+    category: "Cloud",
     year: "2026",
     image: "",
-    live: "#",
-    code: "#",
+    live: "",
+    code: "",
     featured: true,
   },
   {
-    title: "Pulse Mobile",
+    title: "Travolo",
     description:
-      "Cross-platform fitness tracker with offline sync, streaks and smart workout suggestions.",
-    tags: ["Flutter", "Firebase"],
-    category: "Mobile",
-    year: "2025",
-    image: "",
-    live: "#",
-    code: "#",
-  },
-  {
-    title: "Atlas API",
-    description:
-      "Scalable REST + GraphQL backend with auth, rate limiting, caching and full test coverage.",
-    tags: ["Node.js", "PostgreSQL", "Redis", "Docker"],
-    category: "Backend",
-    year: "2025",
-    image: "",
-    live: "#",
-    code: "#",
-  },
-  {
-    title: "Vision Sort",
-    description:
-      "Image classification pipeline that sorts and tags photos automatically using a fine-tuned CNN.",
-    tags: ["Python", "PyTorch", "FastAPI"],
-    category: "AI / ML",
-    year: "2024",
-    image: "",
-    live: "#",
-    code: "#",
-  },
-  {
-    title: "Loom Commerce",
-    description:
-      "Headless e-commerce storefront with blazing-fast pages, cart, checkout and an admin panel.",
-    tags: ["Next.js", "Stripe", "Prisma"],
+      "Web and desktop app for solo travellers: accommodation, activities and carpooling. I owned the accommodation module and built a point-based payment system using NFC.",
+    tags: ["Symfony 6", "PHP", "Java", "NFC"],
     category: "Web",
-    year: "2024",
+    year: "2025",
     image: "",
-    live: "#",
-    code: "#",
-    featured: true,
+    live: "",
+    code: "",
   },
   {
-    title: "Echo Chat",
+    title: "Remote Water-Pump Monitor",
     description:
-      "End-to-end encrypted messaging app with group rooms, typing indicators and file sharing.",
-    tags: ["React Native", "Socket.io"],
-    category: "Mobile",
-    year: "2023",
+      "IoT system to monitor and control a water pump remotely, with machine-learning anomaly detection, GSM remote control and a real-time Streamlit supervision dashboard.",
+    tags: ["IoT", "Python", "Machine Learning", "Streamlit", "GSM"],
+    category: "IoT",
+    year: "2024",
     image: "",
-    live: "#",
-    code: "#",
+    live: "",
+    code: "",
+    featured: true,
   },
 ];
 
-/* Skills — shown as a "Bill of materials". level: 1 to 5 */
+/* Skills — shown as a "Genome map", one row per group */
 const SKILLS = [
-  { name: "TypeScript", group: "Language", level: 5 },
-  { name: "JavaScript", group: "Language", level: 5 },
-  { name: "Python", group: "Language", level: 4 },
-  { name: "React", group: "Frontend", level: 5 },
-  { name: "Next.js", group: "Frontend", level: 4 },
-  { name: "Flutter", group: "Mobile", level: 3 },
-  { name: "Node.js", group: "Backend", level: 4 },
-  { name: "PostgreSQL", group: "Data", level: 4 },
-  { name: "MongoDB", group: "Data", level: 3 },
-  { name: "Docker", group: "DevOps", level: 4 },
-  { name: "AWS", group: "DevOps", level: 3 },
-  { name: "Figma", group: "Design", level: 4 },
+  { group: "Cloud & Virtualization", items: ["Docker", "Kubernetes", "Terraform", "Ansible", "OpenStack", "Virtualization"] },
+  { group: "CI/CD", items: ["Git", "GitHub Actions"] },
+  { group: "Security & Networking", items: ["FortiWeb WAF", "OWASP", "VPN", "Proxy", "Log analysis"] },
+  { group: "Embedded & IoT", items: ["STM32", "Arduino", "ESP32", "Data acquisition", "IoT protocols"] },
+  { group: "Web development", items: ["PHP", "Symfony", "Angular", "Spring Boot", ".NET", "REST APIs"] },
+  { group: "Languages & Databases", items: ["C/C++", "Python", "Java", "MySQL", "Oracle"] },
+  { group: "Systems & Methods", items: ["Linux (Ubuntu)", "Windows", "Agile (Scrum)", "CRISP-DM"] },
 ];
 
-/* Experience — shown as a "Revision history", newest first */
+/* Experience — newest first */
 const EXPERIENCE = [
   {
-    period: "2025 — Present",
-    role: "Full-Stack Developer",
-    company: "Company Name",
-    description:
-      "Building and shipping product features end-to-end, from database design to polished UI.",
+    period: "Jul 2026 — Sep 2026",
+    role: "DevOps Intern",
+    company: "RIF — Rassemblement des Ingénieurs Francophones",
+    place: "Remote",
+    points: [
+      "Set up a VPN and a proxy to secure and control network traffic.",
+      "Automated provisioning and configuration with Terraform and Ansible.",
+      "Built a self-hosted CI/CD pipeline automating test, build and deployment.",
+    ],
   },
   {
-    period: "2024 — 2025",
-    role: "Software Engineering Intern",
-    company: "Another Company",
-    description:
-      "Worked on internal tools, improved performance of key pages and automated deployment workflows.",
+    period: "Jun 2026 — Aug 2026",
+    role: "Cybersecurity Engineering Intern",
+    company: "ACT — Advanced Computer Technologies",
+    place: "Charguia, Tunisia",
+    points: [
+      "Deployed and configured a FortiWeb WAF to protect web applications.",
+      "Wrote security rules against application attacks following OWASP best practices.",
+      "Analysed security logs and events to identify and understand attack attempts.",
+    ],
   },
   {
-    period: "2021 — 2025",
-    role: "Engineering Degree",
-    company: "Your University",
-    description:
-      "Computer science & software engineering. Focus on distributed systems and web technologies.",
+    period: "Jul 2025 — Aug 2025",
+    role: "Software Development Intern",
+    company: "Esprit Entreprise",
+    place: "Ariana, Tunisia",
+    points: [
+      "Developed the offers module of an international mobility platform.",
+      "Designed the interface and integrated features, working in a collaborative team.",
+    ],
+  },
+  {
+    period: "Jan 2024 — May 2024",
+    role: "Final-Year Intern (Bachelor)",
+    company: "Horizon-Data",
+    place: "Manzah 1, Tunisia",
+    points: [
+      "Designed and built an IoT system to monitor a water pump.",
+      "Implemented a machine-learning anomaly-detection algorithm.",
+      "Built a real-time supervision interface with Streamlit and GSM remote control.",
+    ],
+  },
+];
+
+/* Education — newest first */
+const EDUCATION = [
+  {
+    period: "Sep 2026 — Feb 2027",
+    title: "Exchange semester — Smart City track",
+    school: "ESEO",
+    place: "Dijon, France",
+    note: "Academic exchange programme between ESPRIT and ESEO.",
+  },
+  {
+    period: "Sep 2024 — Present",
+    title: "Engineering degree in Computer Science — Cloud Computing",
+    school: "ESPRIT",
+    place: "Ariana, Tunisia",
+    note: "",
+  },
+  {
+    period: "Sep 2021 — Jun 2024",
+    title: "Bachelor in Computer Systems Engineering — Embedded Systems & IoT",
+    school: "ISSAT Mateur",
+    place: "Bizerte, Tunisia",
+    note: "Ranked 1st in the institute with an average of 17.10/20 (2023–2024).",
   },
 ];
