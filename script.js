@@ -27,7 +27,7 @@
   $$("[data-photo]").forEach((el) => SITE.photo && (el.src = SITE.photo));
   $$("[data-stamp]").forEach((el) => (el.textContent = SITE.stamp));
   $$("[data-status]").forEach((el) => (el.textContent = SITE.available ? SITE.status : "Currently booked"));
-  if (!SITE.available) $(".status-dot").classList.add("off");
+  if (!SITE.available) $$(".status-dot").forEach((d) => d.classList.add("off"));
 
   $("[data-about]").innerHTML = esc(SITE.about).replace(/\*(.+?)\*/g, "<mark>$1</mark>");
   $("#specList").innerHTML = SITE.specs
@@ -36,6 +36,18 @@
   $("#socials").innerHTML = Object.entries(SITE.socials)
     .filter(([, url]) => url)
     .map(([label, url]) => `<li><a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)} ↗</a></li>`)
+    .join("");
+
+  $("#footerLinks").innerHTML = [
+    ["Email", `mailto:${SITE.email}`],
+    ...Object.entries(SITE.socials),
+    ["CV (PDF)", SITE.resume],
+  ]
+    .filter(([, url]) => url)
+    .map(([label, url]) => {
+      const external = /^https?:/.test(url);
+      return `<li><a href="${esc(url)}"${external ? ' target="_blank" rel="noopener"' : ""}>${esc(label)}${external ? " ↗" : ""}</a></li>`;
+    })
     .join("");
 
   $("#year").textContent = new Date().getFullYear();
@@ -58,7 +70,12 @@
     clockFmt = new Intl.DateTimeFormat("en-GB", timeOpts);
   }
   const clock = $("#clock");
-  const tickClock = () => (clock.textContent = clockFmt.format(new Date()));
+  const footClock = $("#footClock");
+  const tickClock = () => {
+    const now = clockFmt.format(new Date());
+    clock.textContent = now;
+    footClock.textContent = now.slice(0, 5);
+  };
   tickClock();
   setInterval(tickClock, 1000);
 
@@ -369,16 +386,21 @@
   let d = 0;
   stagesEl.innerHTML = SKILLS.map(
     (g, gi) => `
-    <li class="stage ${gi % 2 ? "bc-1" : "bc-0"}" style="--i:${gi}">
-      <div class="stage-head">
-        <span class="stage-node" aria-hidden="true"></span>
-        <span class="stage-no">${esc(stageLabel(gi))}</span>
-        <h3>${esc(g.group)}</h3>
-        <p>${esc(g.blurb || "")}</p>
+    <li class="stage" style="--i:${gi}">
+      <span class="stage-node" aria-hidden="true"></span>
+      <div class="stage-card" data-no="${pad(gi + 1)}">
+        <div class="stage-head">
+          <div class="stage-top">
+            <span class="stage-no">${esc(stageLabel(gi))}</span>
+            <span class="stage-count">${pad(g.items.length)} tools</span>
+          </div>
+          <h3>${esc(g.group)}</h3>
+          <p>${esc(g.blurb || "")}</p>
+        </div>
+        <ul class="chips">${allSkills
+          .map((s, i) => (s.stage === gi ? `<li style="--d:${(0.35 + d++ * 0.025).toFixed(3)}s">${chipHTML(s, i)}</li>` : ""))
+          .join("")}</ul>
       </div>
-      <ul class="chips">${allSkills
-        .map((s, i) => (s.stage === gi ? `<li style="--d:${(0.35 + d++ * 0.025).toFixed(3)}s">${chipHTML(s, i)}</li>` : ""))
-        .join("")}</ul>
     </li>`
   ).join("");
 
@@ -605,6 +627,9 @@
     $$(".sheet-title, .hero-figure figcaption b").forEach((el) => seqIO.observe(el));
   }
 
+  /* ---------- Map: the route packet only travels for visitors who allow motion ---------- */
+  if (reduceMotion) $$(".map-packet").forEach((el) => el.remove());
+
   /* ---------- Timeline: nodes light up once you've read past them ---------- */
   const passIO = new IntersectionObserver(
     (entries) =>
@@ -661,7 +686,7 @@
     const dark = root.dataset.theme === "dark";
     themeBtn.setAttribute("aria-checked", dark);
     themeBtn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
-    themeMeta.setAttribute("content", dark ? "#0B0F14" : "#EEEBE3");
+    themeMeta.setAttribute("content", dark ? "#0B1220" : "#F5F7FB");
     helix.refresh();
   };
   syncTheme();
@@ -694,7 +719,7 @@
       `Stack:     ${allSkills.filter((s) => s.core).map((s) => s.name).join(", ")}\n` +
       `Contact:   ${SITE.email}\n\n` +
       `You opened the console, so we'd probably get along. Say hi.`,
-    `${mono} color: #6cdcc4; font-weight: 700;`,
+    `${mono} color: #38bdf8; font-weight: 700;`,
     `${mono} color: inherit;`
   );
 })();
