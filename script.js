@@ -583,6 +583,8 @@
   /* ---------- Experience + education timelines ---------- */
   const PIN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`;
   const GLOBE = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>`;
+  const fmtCoord = (lat, lon) =>
+    `${Math.abs(lat).toFixed(4)}°${lat < 0 ? "S" : "N"} ${Math.abs(lon).toFixed(4)}°${lon < 0 ? "W" : "E"}`;
   const locHTML = (m) => {
     if (!m) return "";
     if (m.remote)
@@ -591,6 +593,7 @@
     return `<figure class="loc">
         ${m.tag ? `<span class="loc-tag">${esc(m.tag)}</span>` : ""}
         <div class="loc-map" data-lat="${m.lat}" data-lon="${m.lon}" data-zoom="${m.zoom || 13}" role="img" aria-label="Map of ${esc(m.label)}"></div>
+        <span class="loc-coord" aria-hidden="true">${fmtCoord(m.lat, m.lon)}</span>
         <figcaption><span>${PIN}${esc(m.label)}</span><a href="${link}" target="_blank" rel="noopener">Open in Maps ↗</a></figcaption>
       </figure>`;
   };
@@ -676,38 +679,87 @@
   /* ---------- Location mini maps (Leaflet + OpenStreetMap France tiles) ----------
      Created only when scrolled near, so the page doesn't load tiles it never shows.
      If Leaflet can't load, the caption with "Open in Maps" still works.
-     The dark look comes from a CSS filter on the tiles, so theme changes need no reload. */
+     The dark look comes from a CSS filter on the tiles, so theme changes need no reload.
+     Each map is built zoomed out (country level) and dives into the place once it is
+     actually on screen. On a mouse/trackpad the card comes alive: hovering the entry
+     leans in one zoom step, the map can be dragged or zoomed with +/−, and leaving
+     the entry flies it back home. Touch screens keep a still map so scrolling never
+     gets caught by it. */
   (() => {
     if (typeof L === "undefined") {
       $$(".loc-map").forEach((el) => el.classList.add("no-map"));
       return;
     }
-    const io = new IntersectionObserver(
+    const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const maps = new Map();
+
+    const build = (el) => {
+      const lat = +el.dataset.lat, lon = +el.dataset.lon, zoom = +el.dataset.zoom;
+      const home = [lat, lon];
+      const map = L.map(el, {
+        zoomControl: false, dragging: fine, scrollWheelZoom: false, doubleClickZoom: fine,
+        boxZoom: false, keyboard: false, touchZoom: false, zoomSnap: 0.25,
+      }).setView(home, Math.max(zoom - 7, 4));
+      map.attributionControl.setPrefix(false);
+      // OSM France tiles: place names in French where available (default OSM shows local scripts)
+      L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
+        subdomains: "abc",
+        maxZoom: 19,
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> · <a href="https://www.openstreetmap.fr/" target="_blank" rel="noopener">OSM France</a>',
+      }).addTo(map);
+      L.control.scale({ position: "bottomleft", metric: true, imperial: false, maxWidth: 64 }).addTo(map);
+      if (fine) L.control.zoom({ position: "topright", zoomInTitle: "Zoom in", zoomOutTitle: "Zoom out" }).addTo(map);
+      // dashed ring = "the neighbourhood", sized to the default zoom (~1 km at z13)
+      L.circle(home, { radius: 250 * 2 ** (15 - zoom), className: "loc-area", interactive: false }).addTo(map);
+      L.marker(home, {
+        icon: L.divIcon({ className: "loc-pin", html: "<i></i>", iconSize: [18, 18] }),
+        interactive: false, keyboard: false,
+      }).addTo(map);
+
+      // live coordinate readout follows the map centre
+      const coord = el.parentElement.querySelector(".loc-coord");
+      map.on("move", () => {
+        const c = map.getCenter();
+        coord.textContent = fmtCoord(c.lat, c.lng);
+      });
+
+      const st = { map, home, zoom, ready: false };
+      st.goHome = (dz = 0, duration = 0.9) => map.flyTo(home, zoom + dz, { duration, easeLinearity: 0.3 });
+      maps.set(el, st);
+
+      const event = el.closest(".event");
+      if (fine && event) {
+        event.addEventListener("mouseenter", () => st.ready && st.goHome(1, 0.8));
+        event.addEventListener("mouseleave", () => st.ready && st.goHome(0, 0.8));
+      }
+    };
+
+    // build a little ahead of time so tiles are ready…
+    const buildIO = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
           if (!e.isIntersecting) return;
-          io.unobserve(e.target);
-          const { lat, lon, zoom } = e.target.dataset;
-          const map = L.map(e.target, {
-            zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
-            boxZoom: false, keyboard: false, touchZoom: false,
-          }).setView([+lat, +lon], +zoom);
-          map.attributionControl.setPrefix(false);
-          // OSM France tiles: place names in French where available (default OSM shows local scripts)
-          L.tileLayer("https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png", {
-            subdomains: "abc",
-            maxZoom: 19,
-            attribution:
-              '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · <a href="https://www.openstreetmap.fr/" target="_blank" rel="noopener">OSM France</a>',
-          }).addTo(map);
-          L.marker([+lat, +lon], {
-            icon: L.divIcon({ className: "loc-pin", html: "<i></i>", iconSize: [18, 18] }),
-            interactive: false, keyboard: false,
-          }).addTo(map);
+          buildIO.unobserve(e.target);
+          build(e.target);
         }),
-      { rootMargin: "300px 0px" }
+      { rootMargin: "400px 0px" }
     );
-    $$(".loc-map").forEach((el) => io.observe(el));
+    // …but only dive in once the card is really in view
+    const flyIO = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          flyIO.unobserve(e.target);
+          if (!maps.has(e.target)) buildIO.unobserve(e.target), build(e.target);
+          const st = maps.get(e.target);
+          st.map.once("moveend", () => (st.ready = true));
+          st.goHome(0, reduceMotion ? 1.2 : 2.4);
+          e.target.closest(".loc").classList.add("landed");
+        }),
+      { threshold: 0.6 }
+    );
+    $$(".loc-map").forEach((el) => (buildIO.observe(el), flyIO.observe(el)));
   })();
 
   /* ---------- Map: the route packet only travels for visitors who allow motion ---------- */
