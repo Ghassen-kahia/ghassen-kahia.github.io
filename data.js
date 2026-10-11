@@ -179,13 +179,15 @@ const SKILL_EXTRAS = {
 
 /* Experience — newest first.
    map: neighbourhood shown on the mini map (lat / lon / zoom); optional tag (e.g. "Remote"),
-   or { remote: true } for a card without a map */
+   or { remote: true } for a card without a map
+   logo: { src, url } company logo (assets/logos/) and site, or { mono: "ABC" } until a logo is available */
 const EXPERIENCE = [
   {
     id: "rif",
     period: "Jul 2026 — Sep 2026",
     role: "DevOps Intern",
     company: "RIF — Rassemblement des Ingénieurs Francophones",
+    logo: { src: "assets/logos/rif.png", url: "https://www.linkedin.com/company/rif-rassemblement/" },
     place: "Paris, France · Remote",
     map: { lat: 48.8566, lon: 2.3522, zoom: 12, label: "Paris, France", tag: "Remote", query: "Paris, France" },
     points: [
@@ -199,6 +201,7 @@ const EXPERIENCE = [
     period: "Jun 2026 — Aug 2026",
     role: "Cybersecurity Engineering Intern",
     company: "ACT — Advanced Computer Technologies",
+    logo: { src: "assets/logos/act.svg", url: "https://www.act.com.tn/" },
     place: "Charguia, Tunisia",
     map: { lat: 36.8385, lon: 10.2045, zoom: 13, label: "Charguia, Tunis", query: "Charguia, Tunis, Tunisia" },
     points: [
@@ -212,6 +215,7 @@ const EXPERIENCE = [
     period: "Jul 2025 — Aug 2025",
     role: "Software Development Intern",
     company: "Esprit Entreprise",
+    logo: { src: "assets/logos/esprit.svg", url: "https://www.esprit.tn/" },
     place: "Ariana, Tunisia",
     map: { lat: 36.8992, lon: 10.1897, zoom: 13, label: "Esprit, Ariana", query: "ESPRIT, Ariana, Tunisia" },
     points: [
@@ -224,6 +228,7 @@ const EXPERIENCE = [
     period: "Jan 2024 — May 2024",
     role: "Final-Year Intern (Bachelor)",
     company: "Horizon-Data",
+    logo: { src: "assets/logos/horizon-data.png", url: "https://horizon-data.tn/" },
     place: "Manzah 1, Tunisia",
     map: { lat: 36.8405, lon: 10.1690, zoom: 13, label: "El Menzah 1, Tunis", query: "El Menzah 1, Tunis, Tunisia" },
     points: [
@@ -234,12 +239,13 @@ const EXPERIENCE = [
   },
 ];
 
-/* Education — newest first */
+/* Education — newest first (logo: same shape as in EXPERIENCE) */
 const EDUCATION = [
   {
     period: "Sep 2026 — Feb 2027",
     title: "Exchange semester — Smart City track",
     school: "ESEO",
+    logo: { src: "assets/logos/eseo.svg", url: "https://www.eseo.fr/" },
     place: "Dijon, France",
     map: { lat: 47.3220, lon: 5.0415, zoom: 12, label: "Dijon, France", query: "ESEO Dijon, France" },
     note: "Academic exchange programme between ESPRIT and ESEO.",
@@ -248,6 +254,7 @@ const EDUCATION = [
     period: "Sep 2024 — Present",
     title: "Engineering degree in Computer Science — Cloud Computing",
     school: "ESPRIT",
+    logo: { src: "assets/logos/esprit.svg", url: "https://www.esprit.tn/" },
     place: "Ariana, Tunisia",
     map: { lat: 36.8992, lon: 10.1897, zoom: 13, label: "Esprit, Ariana", query: "ESPRIT, Ariana, Tunisia" },
     note: "",
@@ -256,6 +263,7 @@ const EDUCATION = [
     period: "Sep 2021 — Jun 2024",
     title: "Bachelor in Computer Systems Engineering — Embedded Systems & IoT",
     school: "ISSAT Mateur",
+    logo: { src: "assets/logos/issat-mateur.png" },
     place: "Bizerte, Tunisia",
     map: { lat: 37.0400, lon: 9.6650, zoom: 13, label: "Mateur, Bizerte", query: "ISSAT Mateur, Tunisia" },
     note: "Ranked 1st in the institute with an average of 17.10/20 (2023–2024).",

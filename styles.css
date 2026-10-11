@@ -672,9 +672,9 @@ ol, ul { list-style: none; }
 }
 .loc-area { fill: var(--pin); fill-opacity: 0.06; stroke: var(--pin); stroke-opacity: 0.55; stroke-width: 1.2; stroke-dasharray: 3 4; }
 /* the pin drops in once the map has landed on the place */
-.loc-pin i { transform: scale(0); transition: transform 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 1.6s; }
+.loc-pin i { transform: scale(0); transition: transform 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 0.15s; }
 .landed .loc-pin i { transform: scale(1); }
-.loc-area { opacity: 0; transition: opacity 0.8s 1.4s; }
+.loc-area { opacity: 0; transition: opacity 0.8s; }
 .landed .loc-area { opacity: 1; }
 .loc-map .leaflet-tile-pane { transition: filter 0.4s; }
 /* OpenStreetMap tiles are light: invert, flatten to grey, then tint to midnight blue in dark mode */
@@ -730,6 +730,18 @@ ol, ul { list-style: none; }
 .event-title { font-size: clamp(1.3rem, 2.4vw, 1.9rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
 .event-org { display: inline-block; margin: 6px 0 12px; font-family: var(--f-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
 .event-org i { font-style: normal; color: var(--ink-2); }
+.event-head { display: flex; align-items: flex-start; gap: 16px; }
+.event-head > div { min-width: 0; }
+/* Company logo: always on a light plate so brand colours read the same in both themes */
+.event-logo {
+  flex: none; display: grid; place-items: center; width: 84px; height: 52px; margin-top: 2px; padding: 8px 10px;
+  background: #f8fafc; border: 1px solid var(--line-strong);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--accent-2) 18%, transparent);
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), border-color 0.3s;
+}
+.event-logo img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.event-logo b { font: 700 15px/1 var(--f-mono); letter-spacing: 0.14em; color: #0b1220; }
+.event:hover .event-logo { transform: translate(-2px, -2px); border-color: var(--accent-2); box-shadow: 5px 5px 0 color-mix(in srgb, var(--accent-2) 26%, transparent); }
 .event-points { display: grid; gap: 6px; max-width: 680px; color: var(--ink-2); }
 .event-points li { position: relative; padding-left: 18px; }
 .event-points li::before { content: ""; position: absolute; left: 0; top: 0.75em; width: 8px; height: 1.5px; background: var(--accent-2); }
@@ -978,6 +990,9 @@ ol, ul { list-style: none; }
 }
 
 @media (max-width: 480px) {
+  .event-head { gap: 12px; }
+  .event-logo { width: 64px; height: 42px; padding: 6px 7px; }
+  .event-logo b { font-size: 12px; }
   .brand-meta { display: none; }
   .theme-switch { font-size: 10px; }
   .top-actions { gap: 6px; }

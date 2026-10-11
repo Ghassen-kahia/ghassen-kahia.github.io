@@ -598,14 +598,32 @@
       </figure>`;
   };
 
+  // Company logo on a light plate so every brand keeps its own colours in both themes
+  const logoHTML = (x) => {
+    const l = x.logo;
+    if (!l) return "";
+    const name = (x.company || x.school).split(" — ")[0];
+    const inner = l.src
+      ? `<img src="${esc(l.src)}" alt="${esc(name)} logo" loading="lazy" decoding="async" />`
+      : `<b aria-label="${esc(name)}">${esc(l.mono)}</b>`;
+    return l.url
+      ? `<a class="event-logo" href="${esc(l.url)}" target="_blank" rel="noopener" title="${esc(name)} website">${inner}</a>`
+      : `<span class="event-logo${l.src ? "" : " mono"}">${inner}</span>`;
+  };
+
   $("#expList").innerHTML = EXPERIENCE.map(
     (x) => `
     <li class="event">
       <span class="node" aria-hidden="true"></span>
       <span class="event-date">${esc(x.period)}</span>
       <div class="event-body">
-        <h3 class="event-title">${esc(x.role)}</h3>
-        <span class="event-org">${esc(x.company)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
+        <div class="event-head">
+          ${logoHTML(x)}
+          <div>
+            <h3 class="event-title">${esc(x.role)}</h3>
+            <span class="event-org">${esc(x.company)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
+          </div>
+        </div>
         <ul class="event-points">${x.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
       </div>
       ${locHTML(x.map)}
@@ -618,8 +636,13 @@
       <span class="node" aria-hidden="true"></span>
       <span class="event-date">${esc(x.period)}</span>
       <div class="event-body">
-        <h3 class="event-title">${esc(x.title)}</h3>
-        <span class="event-org">${esc(x.school)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
+        <div class="event-head">
+          ${logoHTML(x)}
+          <div>
+            <h3 class="event-title">${esc(x.title)}</h3>
+            <span class="event-org">${esc(x.school)}${x.place ? ` <i>· ${esc(x.place)}</i>` : ""}</span>
+          </div>
+        </div>
         ${x.note ? `<p class="event-note">${esc(x.note)}</p>` : ""}
       </div>
       ${locHTML(x.map)}
@@ -753,9 +776,11 @@
           flyIO.unobserve(e.target);
           if (!maps.has(e.target)) buildIO.unobserve(e.target), build(e.target);
           const st = maps.get(e.target);
-          st.map.once("moveend", () => (st.ready = true));
+          st.map.once("moveend", () => {
+            st.ready = true;
+            e.target.closest(".loc").classList.add("landed");
+          });
           st.goHome(0, reduceMotion ? 1.2 : 2.4);
-          e.target.closest(".loc").classList.add("landed");
         }),
       { threshold: 0.6 }
     );
