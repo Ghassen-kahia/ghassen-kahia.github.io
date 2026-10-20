@@ -9,13 +9,13 @@ const SITE = {
   role: "Cloud & DevOps Engineer",
   tagline:
     "Engineering student building automated, secure infrastructure — from Terraform to Kubernetes. Looking for a final-year internship (PFE) from February 2027.",
-  email: "ghassenkahya@gmail.com",
+  email: "ghassenkahia.pro@gmail.com",
   location: "Dijon, France",
   timezone: "Europe/Paris", // used for the live clock in the hero
   available: true,
   status: "Open to PFE · Feb 2027", // shown when available is true
   resume: "assets/Ghassen_Kahia_CV.pdf",
-  photo: "assets/me.jpg",
+  photo: "assets/me.jpeg",
   socials: {
     GitHub: "https://github.com/Ghassen-kahia",
     LinkedIn: "", // paste your LinkedIn profile URL here
